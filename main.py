@@ -1,3 +1,4 @@
+import random
 from pedalboard import Pedalboard, Reverb, Gain, Compressor
 from pedalboard.io import AudioFile
 from pydub import AudioSegment
@@ -13,7 +14,10 @@ print(files)
 
 for filenamed in files:
 
-    sound = AudioSegment.from_wav(f'input/{filenamed}')
+    print(f'input/{filenamed}')
+    subprocess.call(['ffmpeg', '-i', f'input/{filenamed}', 'temporal.wav'])
+
+    sound = AudioSegment.from_wav('temporal.wav')
 
     speed_multiplier = 0.8  # Slowdown audio, 1.0 means original speed, 0.5 half speed etc
 
@@ -33,8 +37,8 @@ for filenamed in files:
         samplerate = f.samplerate
 
     board = Pedalboard([
-        Reverb(room_size=0.6, width=0.001, dry_level=0.6),
-        Gain(gain_db=-1.5),
+        Reverb(room_size=0.6, width=0.1, dry_level=0.6),
+        Gain(gain_db=-5),
     ])
 
     # Run the audio through this pedalboard!
@@ -45,8 +49,12 @@ for filenamed in files:
 
     dur = librosa.get_duration(filename='processed-output.wav')
 
+    point = random.randint(int(dur), 850)
     # ffmpeg_extract_subclip("full.mp4", start_seconds, end_seconds, targetname="cut.mp4")
-    ffmpeg_extract_subclip("full.mp4", 0, int(dur), targetname="cut.mp4")
+    ffmpeg_extract_subclip("full.mp4", point-int(dur), point, targetname="cut.mp4")
 
 
-    subprocess.call(['ffmpeg', '-i' ,'cut.mp4', '-i', 'processed-output.wav', '-c:v', 'copy', '-map', '0:v:0', '-map', '1:a:0', f'output/{filenamed[:len(filenamed)-4]}.mp4'])
+    subprocess.call(['ffmpeg', '-i' ,'cut.mp4', '-i', 'processed-output.wav', '-c:v', 'copy', '-map', '0:v:0', '-map', '1:a:0', f'output/{filenamed[:len(filenamed)-4]} [slowed + reverb].mp4'])
+
+
+    os.remove("temporal.wav") 
